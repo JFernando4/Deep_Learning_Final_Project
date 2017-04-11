@@ -1,23 +1,19 @@
 """ Code based on Dale's assignment 1 code """
 import os
-homepath = '/home/jfernando/'
-projectpath = os.path.join(homepath, 'PycharmProjects/Deep_Learning_Final_Project/')
-sourcepath = projectpath
-datapath = os.path.join(projectpath, "Data/")
-
 import sys
-sys.path.append(projectpath)
-
 import numpy as np
 import tensorflow as tf
 from project_util import gap_timing, wrap_counting, losses, models, experiment
-# from project_util import gap_timing
-# from project_util import wrap_counting
 from project_util import measurement as meas
-# from project_util import losses
-# from project_util import models
 from Data.Data_Util.read_image_data import read_train_data, read_test_data
 
+""" Project Paths """
+homepath = '/home/jfernando/'
+''' Project Paths'''
+projectpath = os.getcwd()
+sourcepath = os.path.join(projectpath, '/Data/Util')
+datapath = os.path.join(projectpath, '/Data/')
+sys.path.append(projectpath)
 
 """ Constants Definitions """
 REPEATS = 1
