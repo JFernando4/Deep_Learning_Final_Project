@@ -25,7 +25,7 @@ LABEL_CORRUPTION = 0
 NOISE_TYPE = "Gaussian"
 
 # save filenames
-FILELABEL = "MNIST_cpcpf"
+FILELABEL = "MNIST_fff"
 FILETAG = "pc"+str(PIXEL_CORRUPTION)+"_lc"+str(LABEL_CORRUPTION)
 
 # plot bounds
@@ -52,7 +52,7 @@ te, m = test_data[1].shape
 xdata = np.zeros([BATCH, n1, n2, d0], dtype=np.float32) # minibatch holder
 ydata = np.zeros([BATCH, m], dtype=np.float32)
 
-#     # read MNIST data: matrix format
+#     # read MNIST data: vector format
 # valid_data, train_data = read_train_data("MNIST", noise=NOISE_TYPE, plabel=LABEL_CORRUPTION,
 #                                                  p=PIXEL_CORRUPTION, image_shape=[784], one_hot=True,
 #                                                  num_validation=VALID)
@@ -63,7 +63,7 @@ ydata = np.zeros([BATCH, m], dtype=np.float32)
 # t, n = train_data[0].shape
 # te, m = test_data[1].shape
 #   # minibatch holders
-# xdata_vec = np.zeros([BATCH, n], dtype=np.float32)
+# xdata = np.zeros([BATCH, n], dtype=np.float32)
 # ydata = np.zeros([BATCH, m], dtype=np.float32)
 
 
@@ -89,7 +89,7 @@ def methoddef(name, color, model, optimizer,
 
 
 # define methods
-
+step_sizes = [10, 20, 30, 40, 50, 60, 70, 80, 90, 100]
 methods = []
 
 # for i in range(2, 10):
@@ -112,7 +112,7 @@ methods = []
 name = "cp_ff"
 color = "#F02311"  # red
 f1 = 5  # filter size (f1 x f1)
-d1 = 64     # filter depth (number of independent filters)
+d1 = 64 * 2     # filter depth (number of independent filters)
 hidden = 1024   # number of neurons
 dimensions = (n1, n2, d0, f1, d1, hidden, m)
 gate_fun = tf.nn.relu
@@ -124,16 +124,17 @@ method = methoddef(name, color, model, optimizer, xdata, ydata,
 methods.append(method)
 
 
-# name = "ff"
+
+# name = "fff"
 # color = "#FBB829" #yellow
-# hidden = 1024 * 5
+# hidden = 1024
 # dimensions = (n, hidden, m)
 # gate_fun = tf.nn.relu
 # loss_fun = lambda z_hat, y: tf.nn.softmax_cross_entropy_with_logits(logits=z_hat, labels=y)
 # # loss_fun = lambda z_hat, y: losses.kl_divergence_ml(z_hat, y, tau=0.2)
-# model = models.model_5fully_connected(name, dimensions, gate_fun, loss_fun)
-# optimizer = tf.train.AdamOptimizer((1.0 / BATCH) / 30)
-# method = methoddef(name, color, model, optimizer, xdata_vec, ydata,
+# model = models.model_3fully_connected(name, dimensions, gate_fun, loss_fun)
+# optimizer = tf.train.GradientDescentOptimizer((1.0 / BATCH))
+# method = methoddef(name, color, model, optimizer, xdata, ydata,
 #                    train_data, valid_data, test_data)
 # methods.append(method)
 
