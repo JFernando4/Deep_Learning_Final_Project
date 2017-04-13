@@ -15,17 +15,17 @@ sys.path.append(projectpath)
 
 """ Constants Definitions """
 REPEATS = 1
-MAX_EPOCH = 40
+MAX_EPOCH = 200
 BATCH = 100 # minibatch size
 VALID = 5000 # size of validation set
 SEED = None #66478 # None for random seed
 ECHO = True
 PIXEL_CORRUPTION = 0
-LABEL_CORRUPTION = 1
+LABEL_CORRUPTION = 5
 NOISE_TYPE = "Gaussian"
 
 # save filenames
-FILELABEL = "MNIST_cpcpf"
+FILELABEL = "MNIST_fff"
 FILETAG = "pc"+str(PIXEL_CORRUPTION)+"_lc"+str(LABEL_CORRUPTION)
 
 # plot bounds
@@ -109,18 +109,20 @@ methods = []
 #                        train_data, valid_data, test_data)
 #     methods.append(method)
 
-name = "ff"
-color = "#FBB829" #yellow
-hidden = 1024 * 5
-dimensions = (n, hidden, m)
-gate_fun = tf.nn.relu
-loss_fun = lambda z_hat, y: tf.nn.softmax_cross_entropy_with_logits(logits=z_hat, labels=y)
-# loss_fun = lambda z_hat, y: losses.kl_divergence_ml(z_hat, y, tau=0.2)
-model = models.model_5fully_connected(name, dimensions, gate_fun, loss_fun)
-optimizer = tf.train.AdamOptimizer((1.0 / BATCH) / 30)
-method = methoddef(name, color, model, optimizer, xdata_vec, ydata,
-                   train_data, valid_data, test_data)
-methods.append(method)
+step_sizes = [10, 20, 30, 40, 50, 60, 70, 80, 100]
+for i in step_sizes:
+    name = "cpff_q"+str(i)
+    color = "#FBB829" #yellow
+    hidden = 1024 * 10
+    dimensions = (n, hidden, m)
+    gate_fun = tf.nn.relu
+    loss_fun = lambda z_hat, y: tf.nn.softmax_cross_entropy_with_logits(logits=z_hat, labels=y)
+    # loss_fun = lambda z_hat, y: losses.kl_divergence_ml(z_hat, y, tau=0.2)
+    model = models.model_2fully_connected(name, dimensions, gate_fun, loss_fun)
+    optimizer = tf.train.AdamOptimizer((1.0 / BATCH) / i)
+    method = methoddef(name, color, model, optimizer, xdata_vec, ydata,
+                       train_data, valid_data, test_data)
+    methods.append(method)
 
 
 # run experiment

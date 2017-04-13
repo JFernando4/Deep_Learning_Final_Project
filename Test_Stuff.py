@@ -13,14 +13,16 @@ sys.path.append(datapath)
 
 import matplotlib.pyplot as plt
 
-# validation, train = read_image_data.read_train_data("MNIST","Gaussian", plabel=0, p=10, image_shape=[784],
-#                                                                 one_hot=True, num_validation=1000)
+validation, train = read_image_data.read_train_data("MNIST","Gaussian", plabel=0, p=10, image_shape=[784],
+                                                                one_hot=False, num_validation=1000)
+validation2, train2 = read_image_data.read_train_data("MNIST","Gaussian", plabel=10, p=0, image_shape=[784],
+                                                                one_hot=False, num_validation=1000)
 # images = train[0]
 # plt.imshow(images[0].reshape((28,28)))
 
-test = read_image_data.read_test_data("MNIST", noise="Gaussian", plabel=0, p=5, image_shape=[784], one_hot=True)
-images = test[0]
-plt.imshow(images[0].reshape((28,28)))
+# test = read_image_data.read_test_data("MNIST", noise="Gaussian", plabel=0, p=5, image_shape=[784], one_hot=True)
+# images = test[0]
+# plt.imshow(images[0].reshape((28,28)))
 
 
 

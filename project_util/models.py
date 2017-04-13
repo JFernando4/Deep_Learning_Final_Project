@@ -75,6 +75,33 @@ class model_5fully_connected():
     self.misclass_err = tf.reduce_sum(tf.cast(
         tf.not_equal(tf.argmax(y_hat, 1), tf.argmax(self.y, 1)), tf.float32))
 
+class model_3fully_connected():
+  """Define an f_f model: input -> fully connected -> output"""
+  def __init__(self, name, dimensions, gate_fun, loss_fun, SEED=None):
+      # placeholders
+    dim_in, hidden, dim_out = dimensions
+    self.x = tf.placeholder(tf.float32, shape=(None, dim_in)) # input
+    self.y = tf.placeholder(tf.float32, shape=(None, dim_out)) # target
+      # layer 1: full
+    W_1, b_1, z_hat_1, y_hat_1 = layers.fully_connected(
+        name, "layer_1", self.x, dim_in, hidden,
+        tf.random_normal_initializer(stddev=1.0/np.sqrt(dim_in+1), seed=SEED),
+        gate_fun)
+      # layer 2: full
+    W_2, b_2, z_hat_2, y_hat_2 = layers.fully_connected(
+        name, "layer_2", y_hat_1, hidden, hidden,
+        tf.random_normal_initializer(stddev=1.0/np.sqrt(hidden+1), seed=SEED),
+        tf.nn.softmax)
+      # layer 3: full
+    W_3, b_3, z_hat, y_hat = layers.fully_connected(
+        name, "layer_3", y_hat_2, hidden, dim_out,
+        tf.random_normal_initializer(stddev=1.0 / np.sqrt(hidden + 1), seed=SEED),
+        tf.nn.softmax)
+      # loss
+    self.train_loss = tf.reduce_sum(loss_fun(z_hat_2, self.y))
+    self.train_vars = [W_1, b_1, W_2, b_2, W_3, b_3]
+    self.misclass_err = tf.reduce_sum(tf.cast(
+        tf.not_equal(tf.argmax(y_hat, 1), tf.argmax(self.y, 1)), tf.float32))
 
 class model_cp_cp_f():
   """Define a cp_cp_f model: input -> conv & pool -> conv & pool -> output"""
