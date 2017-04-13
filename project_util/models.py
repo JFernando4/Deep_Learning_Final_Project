@@ -37,7 +37,7 @@ class model_2fully_connected():
 
 
 class model_5fully_connected():
-  """Define an f_f model: input -> fully connected -> output"""
+  """Define an 5f model: input -> 5 x fully connected -> output"""
   def __init__(self, name, dimensions, gate_fun, loss_fun, SEED=None):
       # placeholders
     dim_in, hidden, dim_out = dimensions
@@ -112,3 +112,81 @@ class model_cp_cp_f():
     self.train_vars = [W_1, b_1, W_2, b_2, W_3, b_3]
     self.misclass_err = tf.reduce_sum(tf.cast(
         tf.not_equal(tf.argmax(y_hat, 1), tf.argmax(self.y, 1)), tf.float32))
+
+
+class model_cp_f_f():
+    """ Define a cp f f model: input -> conv & pool -> 2 x fully connected -> output """
+    def __init__(self, name, dimensions, gate_fun, loss_fun, SEED=None):
+        # placeholders
+        # n1 x n2 = image dimensions
+        # d0 = number of channels (rgb or greyscale)
+        # d1 = number of independent filters
+        # f1 = filter size
+        n1, n2, d0, f1, d1, hidden, m = dimensions
+        self.x = tf.placeholder(tf.float32, shape=(None, n1, n2, d0))  # input
+        self.y = tf.placeholder(tf.float32, shape=(None, m))  # target
+        # layer 1: conv
+        W_1, b_1, z_hat_1, r_hat_1 = layers.convolution_2d(
+            name, "layer_1", self.x, f1, d0, d1,
+            tf.random_normal_initializer(stddev=1.0 / np.sqrt(f1 * f1 * d0 + 1), seed=SEED),
+            gate_fun)
+        # layer 1.5: pool
+        s_hat_1 = tf.nn.max_pool(
+            r_hat_1, ksize=[1, 2, 2, 1], strides=[1, 2, 2, 1], padding="SAME")
+        shape_1 = s_hat_1.get_shape().as_list()
+        y_hat_1 = tf.reshape(s_hat_1, [-1, shape_1[1] * shape_1[2] * shape_1[3]])
+        # layer 2: full
+        W_2, b_2, z_hat_2, y_hat_2 = layers.fully_connected(
+            name, "layer_2", y_hat_1, (n1 * n2 * d1) // 4, hidden,
+            tf.random_normal_initializer(stddev=1.0 / np.sqrt((n1 * n2 * d1) // 4),
+                                         seed=SEED),
+            tf.nn.softmax)
+        # layer 3: full
+        W_3, b_3, z_hat_3, y_hat_3 = layers.fully_connected(
+            name, "layer_3", y_hat_2, hidden, m,
+            tf.random_normal_initializer(stddev=1.0 / np.sqrt(hidden + 1), seed=SEED),
+            tf.nn.softmax)
+        # loss
+        self.train_loss = tf.reduce_sum(loss_fun(z_hat_3, self.y))
+        self.train_vars = [W_1, b_1, W_2, b_2, W_3, b_3]
+        self.misclass_err = tf.reduce_sum(tf.cast(
+            tf.not_equal(tf.argmax(y_hat_3, 1), tf.argmax(self.y, 1)), tf.float32))
+
+
+class model_cp_f_fdc():
+    """ Define a cp f f model: input -> conv & pool -> 2 x fully connected -> output """
+    def __init__(self, name, dimensions, gate_fun, loss_fun, p, SEED=None):
+        # placeholders
+        # n1 x n2 = image dimensions
+        # d0 = number of channels (rgb or greyscale)
+        # d1 = number of independent filters
+        # f1 = filter size
+        n1, n2, d0, f1, d1, hidden, m = dimensions
+        self.x = tf.placeholder(tf.float32, shape=(None, n1, n2, d0))  # input
+        self.y = tf.placeholder(tf.float32, shape=(None, m))  # target
+        # layer 1: conv
+        W_1, b_1, z_hat_1, r_hat_1 = layers.convolution_2d(
+            name, "layer_1", self.x, f1, d0, d1,
+            tf.random_normal_initializer(stddev=1.0 / np.sqrt(f1 * f1 * d0 + 1), seed=SEED),
+            gate_fun)
+        # layer 1.5: pool
+        s_hat_1 = tf.nn.max_pool(
+            r_hat_1, ksize=[1, 2, 2, 1], strides=[1, 2, 2, 1], padding="SAME")
+        shape_1 = s_hat_1.get_shape().as_list()
+        y_hat_1 = tf.reshape(s_hat_1, [-1, shape_1[1] * shape_1[2] * shape_1[3]])
+        # layer 2: full
+        W_2, b_2, z_hat_2, y_hat_2 = layers.fully_connected(
+            name, "layer_2", y_hat_1, (n1 * n2 * d1) // 4, hidden,
+            tf.random_normal_initializer(stddev=1.0 / np.sqrt((n1 * n2 * d1) // 4),
+                                         seed=SEED),
+            tf.nn.softmax)
+        # layer 3: full
+        W_3, MW_3, b_3, mb_3, z_hat_3, y_hat_3 = layers.drop_connect(
+            name, "layer_3", y_hat_2, hidden, m,
+            tf.random_normal_initializer(stddev=1.0 / np.sqrt(hidden + 1), seed=SEED),
+            tf.nn.softmax, p)
+        # loss
+        self.train_loss = tf.reduce_sum(loss_fun(z_hat_3, self.y))
+        self.train_vars = [W_1, b_1, W_2, b_2, tf.multiply(MW_3, W_3), tf.multiply(mb_3, b_3)]
+        self.misclass_err = tf.reduce_sum(tf.cast(
+            tf.not_equal(tf.argmax(y_hat_3, 1), tf.argmax(self.y, 1)), tf.float32))
