@@ -15,17 +15,17 @@ sys.path.append(projectpath)
 
 """ Constants Definitions """
 REPEATS = 1
-MAX_EPOCH = 200
+MAX_EPOCH = 40
 BATCH = 100 # minibatch size
 VALID = 5000 # size of validation set
 SEED = None #66478 # None for random seed
 ECHO = True
 PIXEL_CORRUPTION = 0
-LABEL_CORRUPTION = 5
+LABEL_CORRUPTION = 0
 NOISE_TYPE = "Gaussian"
 
 # save filenames
-FILELABEL = "MNIST_fff"
+FILELABEL = "MNIST_cpcpf"
 FILETAG = "pc"+str(PIXEL_CORRUPTION)+"_lc"+str(LABEL_CORRUPTION)
 
 # plot bounds
@@ -36,35 +36,35 @@ YMAX_TEST  = 400.0
 epoch = (60000 - VALID)//BATCH
 
 """ Reading the data """
-#     # read MNIST data: matrix format
-# valid_data, train_data = read_train_data("MNIST", noise=NOISE_TYPE, plabel=LABEL_CORRUPTION,
-#                                                  p=PIXEL_CORRUPTION, image_shape=[28, 28], one_hot=True,
-#                                                  num_validation=VALID)
-#
-# test_data = read_test_data("MNIST", noise="Gaussian", plabel=0, p=0, image_shape=[28,28], one_hot=True)
-#
-#     # Dimensions
-# t, n1, n2, d0 = train_data[0].shape
-# n = n1*n2
-# te, m = test_data[1].shape
-#
-#   # minibatch holders
-# xdata = np.zeros([BATCH, n1, n2, d0], dtype=np.float32) # minibatch holder
-# ydata = np.zeros([BATCH, m], dtype=np.float32)
-
     # read MNIST data: matrix format
 valid_data, train_data = read_train_data("MNIST", noise=NOISE_TYPE, plabel=LABEL_CORRUPTION,
-                                                 p=PIXEL_CORRUPTION, image_shape=[784], one_hot=True,
+                                                 p=PIXEL_CORRUPTION, image_shape=[28, 28], one_hot=True,
                                                  num_validation=VALID)
 
-test_data = read_test_data("MNIST", noise="Gaussian", plabel=0, p=0, image_shape=[784], one_hot=True)
+test_data = read_test_data("MNIST", noise="Gaussian", plabel=0, p=0, image_shape=[28,28], one_hot=True)
 
-  # dimensions
-t, n = train_data[0].shape
+    # Dimensions
+t, n1, n2, d0 = train_data[0].shape
+n = n1*n2
 te, m = test_data[1].shape
+
   # minibatch holders
-xdata_vec = np.zeros([BATCH, n], dtype=np.float32)
+xdata = np.zeros([BATCH, n1, n2, d0], dtype=np.float32) # minibatch holder
 ydata = np.zeros([BATCH, m], dtype=np.float32)
+
+#     # read MNIST data: matrix format
+# valid_data, train_data = read_train_data("MNIST", noise=NOISE_TYPE, plabel=LABEL_CORRUPTION,
+#                                                  p=PIXEL_CORRUPTION, image_shape=[784], one_hot=True,
+#                                                  num_validation=VALID)
+#
+# test_data = read_test_data("MNIST", noise="Gaussian", plabel=0, p=0, image_shape=[784], one_hot=True)
+#
+#   # dimensions
+# t, n = train_data[0].shape
+# te, m = test_data[1].shape
+#   # minibatch holders
+# xdata_vec = np.zeros([BATCH, n], dtype=np.float32)
+# ydata = np.zeros([BATCH, m], dtype=np.float32)
 
 
 # wrapper: combines model + optimizer into "method" to run with util1.experiment
@@ -109,20 +109,33 @@ methods = []
 #                        train_data, valid_data, test_data)
 #     methods.append(method)
 
-step_sizes = [10, 20, 30, 40, 50, 60, 70, 80, 100]
-for i in step_sizes:
-    name = "cpff_q"+str(i)
-    color = "#FBB829" #yellow
-    hidden = 1024 * 10
-    dimensions = (n, hidden, m)
-    gate_fun = tf.nn.relu
-    loss_fun = lambda z_hat, y: tf.nn.softmax_cross_entropy_with_logits(logits=z_hat, labels=y)
-    # loss_fun = lambda z_hat, y: losses.kl_divergence_ml(z_hat, y, tau=0.2)
-    model = models.model_2fully_connected(name, dimensions, gate_fun, loss_fun)
-    optimizer = tf.train.AdamOptimizer((1.0 / BATCH) / i)
-    method = methoddef(name, color, model, optimizer, xdata_vec, ydata,
-                       train_data, valid_data, test_data)
-    methods.append(method)
+name = "cp_ff"
+color = "#F02311"  # red
+f1 = 5  # filter size (f1 x f1)
+d1 = 64     # filter depth (number of independent filters)
+hidden = 1024   # number of neurons
+dimensions = (n1, n2, d0, f1, d1, hidden, m)
+gate_fun = tf.nn.relu
+loss_fun = lambda z_hat, y: tf.nn.softmax_cross_entropy_with_logits(logits=z_hat, labels=y)
+model = models.model_cp_f_f(name, dimensions, gate_fun, loss_fun)
+optimizer = tf.train.GradientDescentOptimizer(0.1/BATCH)
+method = methoddef(name, color, model, optimizer, xdata, ydata,
+                   train_data, valid_data, test_data)
+methods.append(method)
+
+
+# name = "ff"
+# color = "#FBB829" #yellow
+# hidden = 1024 * 5
+# dimensions = (n, hidden, m)
+# gate_fun = tf.nn.relu
+# loss_fun = lambda z_hat, y: tf.nn.softmax_cross_entropy_with_logits(logits=z_hat, labels=y)
+# # loss_fun = lambda z_hat, y: losses.kl_divergence_ml(z_hat, y, tau=0.2)
+# model = models.model_5fully_connected(name, dimensions, gate_fun, loss_fun)
+# optimizer = tf.train.AdamOptimizer((1.0 / BATCH) / 30)
+# method = methoddef(name, color, model, optimizer, xdata_vec, ydata,
+#                    train_data, valid_data, test_data)
+# methods.append(method)
 
 
 # run experiment
