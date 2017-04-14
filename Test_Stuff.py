@@ -12,14 +12,25 @@ datapath = os.path.join(projectpath, '/Data/')
 sys.path.append(datapath)
 
 import matplotlib.pyplot as plt
+import numpy as np
 
-validation, train = read_image_data.read_train_data("MNIST","Gaussian", plabel=0, p=10, image_shape=[784],
-                                                                one_hot=False, num_validation=1000)
-validation2, train2 = read_image_data.read_train_data("MNIST","Gaussian", plabel=10, p=0, image_shape=[784],
-                                                                one_hot=False, num_validation=1000)
-# images = train[0]
-# plt.imshow(images[0].reshape((28,28)))
+train = list()
+for i in range(0, 11):
+    temp_valid, temp_train = read_image_data.read_train_data("MNIST", "Gaussian", plabel=0, p=i, image_shape=[784],
+                                                             one_hot=True, num_validation=1000)
+    train.append(temp_train)
 
+f, axarr = plt.subplots(2, 6)
+for i in range(0,11):
+    images = train[i][0]
+    xindex = i % 6
+    yindex = int(np.floor(i/6))
+    axarr[yindex, xindex].imshow(images[1].reshape((28, 28)))
+
+
+
+# validation2, train2 = read_image_data.read_train_data("MNIST","Gaussian", plabel=10, p=0, image_shape=[784],
+#                                                                 one_hot=False, num_validation=1000)
 # test = read_image_data.read_test_data("MNIST", noise="Gaussian", plabel=0, p=5, image_shape=[784], one_hot=True)
 # images = test[0]
 # plt.imshow(images[0].reshape((28,28)))

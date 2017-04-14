@@ -20,8 +20,8 @@ BATCH = 100 # minibatch size
 VALID = 5000 # size of validation set
 SEED = None #66478 # None for random seed
 ECHO = True
-PIXEL_CORRUPTION = 0
-LABEL_CORRUPTION = 10
+PIXEL_CORRUPTION = 8
+LABEL_CORRUPTION = 0
 NOISE_TYPE = "Gaussian"
 
 # save filenames
@@ -89,7 +89,7 @@ def methoddef(name, color, model, optimizer,
 
 
 # define methods
-step_sizes = [1,2] #[20, 30, 40, 50, 60, 70, 80, 90, 100] #[2,4,6,8]
+step_sizes = [4,5,6,7] #[20, 30, 40, 50, 60, 70, 80, 90, 100] #[2,4,6,8]
 methods = []
 
 # for i in range(2, 10):
