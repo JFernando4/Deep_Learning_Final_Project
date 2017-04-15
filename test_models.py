@@ -20,7 +20,7 @@ BATCH = 100 # minibatch size
 VALID = 5000 # size of validation set
 SEED = None #66478 # None for random seed
 ECHO = True
-PIXEL_CORRUPTION = 8
+PIXEL_CORRUPTION = 5
 LABEL_CORRUPTION = 0
 NOISE_TYPE = "Gaussian"
 
@@ -36,28 +36,15 @@ YMAX_TEST  = 400.0
 epoch = (60000 - VALID)//BATCH
 
 """ Reading the data """
-#     # read MNIST data: matrix format
-# valid_data, train_data = read_train_data("MNIST", noise=NOISE_TYPE, plabel=LABEL_CORRUPTION,
-#                                                  p=PIXEL_CORRUPTION, image_shape=[28, 28], one_hot=True,
-#                                                  num_validation=VALID)
-#
-# test_data = read_test_data("MNIST", noise="Gaussian", plabel=0, p=0, image_shape=[28,28], one_hot=True)
-#
-#     # Dimensions
-# t, n1, n2, d0 = train_data[0].shape
-# n = n1*n2
-# te, m = test_data[1].shape
-#
-#   # minibatch holders
-# xdata = np.zeros([BATCH, n1, n2, d0], dtype=np.float32) # minibatch holder
-# ydata = np.zeros([BATCH, m], dtype=np.float32)
-
     # read MNIST data: vector format
 valid_data, train_data = read_train_data("MNIST", noise=NOISE_TYPE, plabel=LABEL_CORRUPTION,
                                                  p=PIXEL_CORRUPTION, image_shape=[784], one_hot=True,
                                                  num_validation=VALID)
 
 test_data = read_test_data("MNIST", noise="Gaussian", plabel=0, p=0, image_shape=[784], one_hot=True)
+
+train_data_means = np.mean(train_data[0], 1)
+train_data_sds   = np.std(train_data[0], 1)
 
   # dimensions
 t, n = train_data[0].shape
@@ -69,7 +56,7 @@ ydata = np.zeros([BATCH, m], dtype=np.float32)
 
 # wrapper: combines model + optimizer into "method" to run with util1.experiment
 def methoddef(name, color, model, optimizer,
-              xdata, ydata, data_train, data_valid, data_test):
+              xdata, ydata, data_train, data_valid, data_test, train_data_mean, train_data_sd):
   """method = model + optimizer:
      wrap a model + optimizer into a method for use with util1.experiment"""
   method = experiment.method(
@@ -84,12 +71,15 @@ def methoddef(name, color, model, optimizer,
                  meas.meas_loss(model.x, model.y, data_test,
                                 model.misclass_err, "test_err", batch=BATCH,
                                 axes=[0.0, np.inf, 0.0, YMAX_TEST]),
+                 meas.meas_avg_euclid_dist_loss(model.x, model.y, data_train, train_data_mean, train_data_sd,
+                                                model.y_hat, "train_euclid_dist_loss", batch=BATCH,
+                                                axes=[0.0, np.inf, 0.0, YMAX_TEST]),
                  meas.meas_time("train_time") ]
   return method
 
 
 # define methods
-step_sizes = [4,5,6,7] #[20, 30, 40, 50, 60, 70, 80, 90, 100] #[2,4,6,8]
+step_sizes = [4] #[20, 30, 40, 50, 60, 70, 80, 90, 100] #[2,4,6,8]
 methods = []
 
 # for i in range(2, 10):
@@ -127,7 +117,7 @@ methods = []
 for i in step_sizes:
     name = "fff_5120_q"+str(i)
     color = "#FBB829" #yellow
-    hidden = 1024 * 5
+    hidden = 1024
     dimensions = (n, hidden, m)
     gate_fun = tf.nn.relu
     loss_fun = lambda z_hat, y: tf.nn.softmax_cross_entropy_with_logits(logits=z_hat, labels=y)
@@ -135,7 +125,7 @@ for i in step_sizes:
     model = models.model_3fully_connected(name, dimensions, gate_fun, loss_fun)
     optimizer = tf.train.GradientDescentOptimizer((1.0 / BATCH)/i)
     method = methoddef(name, color, model, optimizer, xdata, ydata,
-                       train_data, valid_data, test_data)
+                       train_data, valid_data, test_data, train_data_means, train_data_sds)
     methods.append(method)
 
 
@@ -155,3 +145,19 @@ means = experiment.summarize(results) # updates, methods, measures
 experiment.print_results(methods_use, means, sys.stdout, FILETAG)
 experiment.print_results(methods_use, means, FILELABEL, FILETAG)
 # experiment.plot_results(methods_use, means, FILELABEL, FILETAG)
+
+#     # read MNIST data: matrix format
+# valid_data, train_data = read_train_data("MNIST", noise=NOISE_TYPE, plabel=LABEL_CORRUPTION,
+#                                                  p=PIXEL_CORRUPTION, image_shape=[28, 28], one_hot=True,
+#                                                  num_validation=VALID)
+#
+# test_data = read_test_data("MNIST", noise="Gaussian", plabel=0, p=0, image_shape=[28,28], one_hot=True)
+#
+#     # Dimensions
+# t, n1, n2, d0 = train_data[0].shape
+# n = n1*n2
+# te, m = test_data[1].shape
+#
+#   # minibatch holders
+# xdata = np.zeros([BATCH, n1, n2, d0], dtype=np.float32) # minibatch holder
+# ydata = np.zeros([BATCH, m], dtype=np.float32)

@@ -93,7 +93,7 @@ class model_3fully_connected():
         tf.random_normal_initializer(stddev=1.0/np.sqrt(hidden+1), seed=SEED),
         gate_fun)
       # layer 3: full
-    W_3, b_3, z_hat, y_hat = layers.fully_connected(
+    W_3, b_3, z_hat, self.y_hat = layers.fully_connected(
         name, "layer_3", y_hat_2, hidden, dim_out,
         tf.random_normal_initializer(stddev=1.0 / np.sqrt(hidden + 1), seed=SEED),
         tf.nn.softmax)
@@ -101,7 +101,7 @@ class model_3fully_connected():
     self.train_loss = tf.reduce_sum(loss_fun(z_hat, self.y))
     self.train_vars = [W_1, b_1, W_2, b_2, W_3, b_3]
     self.misclass_err = tf.reduce_sum(tf.cast(
-        tf.not_equal(tf.argmax(y_hat, 1), tf.argmax(self.y, 1)), tf.float32))
+        tf.not_equal(tf.argmax(self.y_hat, 1), tf.argmax(self.y, 1)), tf.float32))
 
 class model_cp_cp_f():
   """Define a cp_cp_f model: input -> conv & pool -> conv & pool -> output"""

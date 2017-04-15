@@ -52,6 +52,57 @@ class meas_loss(measure):
     return loss_total
 
 
+class meas_avg_euclid_dist_loss(measure):
+
+    def __init__(self, x, y, data, data_mean, data_sd, model_output, label,
+                 batch=100, axes = [0.0, np.inf, 0.0, np.inf]):
+        self.x = x
+        self.y = y
+        self.data = data
+        self.data_mean = data_mean
+        self.data_sd = data_sd
+        self.model_output = model_output
+        self.label = label
+        self.batch = batch
+        self.axes = axes
+
+    def eval(self, sess):
+        loss_total = 0
+        X, Y = self.data
+        means = self.data_mean
+        sds = self.data_sd
+        modified_X = self.add_noise(X, means, sds)
+        end = X.shape[0]
+        cur = 0
+        while cur < end:
+            inds = range(cur, min(cur + self.batch, end))
+            model_predict = sess.run(self.model_output, feed_dict={self.x: X[inds],
+                                                           self.y: Y[inds]})
+            modified_predict = sess.run(self.model_output, feed_dict={self.x: modified_X[inds],
+                                                              self.y: Y[inds]})
+            loss_total += self.euclid_dist(model_predict, modified_predict)
+            cur += self.batch
+        return loss_total
+
+    def add_noise(self, X, X_mean, X_sd, pixels=1):
+        n, max_idx = X.shape # Total number of observations and pixels in a flattened image
+        random_noise = np.abs(np.transpose(np.random.normal(X_mean, X_sd, [pixels, n])))
+        random_indices = np.random.choice(max_idx, [n, pixels])
+        noisy_X = np.add(np.zeros(X.shape, dtype=X.dtype), X)
+        for i in range(0, n):
+            noisy_X[i][random_indices[i]] = random_noise[i]
+        return noisy_X
+
+    def euclid_dist(self, x, y): # x and y must have the same shape
+        xy_diff = np.subtract(x,y)
+        sqrd_diff = np.multiply(xy_diff, xy_diff)
+        col_sum = np.sum(sqrd_diff, 1)
+        distance = np.sum(np.sqrt(col_sum))
+        return distance
+
+
+
+
 class meas_time(measure):
 
   def __init__(self, label, axes=[0.0, np.inf, 0.0, np.inf]):
