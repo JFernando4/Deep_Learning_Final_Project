@@ -86,11 +86,11 @@ class meas_avg_euclid_dist_loss(measure):
 
     def add_noise(self, X, X_mean, X_sd, pixels=1):
         n, max_idx = X.shape # Total number of observations and pixels in a flattened image
-        random_noise = np.abs(np.transpose(np.random.normal(X_mean, X_sd, [pixels, n])))
+        # random_noise = np.abs(np.transpose(np.random.normal(X_mean, X_sd, [pixels, n])))
         random_indices = np.random.choice(max_idx, [n, pixels])
         noisy_X = np.add(np.zeros(X.shape, dtype=X.dtype), X)
         for i in range(0, n):
-            noisy_X[i][random_indices[i]] = random_noise[i]
+            noisy_X[i][random_indices[i]] = 0#random_noise[i]
         return noisy_X
 
     def euclid_dist(self, x, y): # x and y must have the same shape
