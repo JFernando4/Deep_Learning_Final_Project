@@ -68,10 +68,10 @@ def run_methods_list(methods, gap_timer, sampler, repeats, echo=False):
 
 
 def summarize(results):
-  return np.mean(results, axis=0) # updates, methods, measures
+  return np.mean(results, axis=0), np.std(results, axis=0) # updates, methods, measures
 
 
-def print_results(methods, mean_results, filename, label):
+def print_results(methods, mean_results, sd_results, filename, label):
   if filename == sys.stdout:
     file = sys.stdout
   else:
@@ -85,7 +85,7 @@ def print_results(methods, mean_results, filename, label):
       s = -1
       for meas in method.meas:
         s += 1
-        file.write("%g\t"%(mean_results[u, m, s]))
+        file.write("%g\t"%(mean_results[u, m, s])+"%g\t"%(sd_results[u, m, s]))
       file.write("\n")
   if file != sys.stdout:
     file.close()

@@ -52,15 +52,13 @@ class meas_loss(measure):
     return loss_total
 
 
-class meas_avg_euclid_dist_loss(measure):
+class meas_dropout_euclid_dist(measure):
 
-    def __init__(self, x, y, data, data_mean, data_sd, model_output, label,
+    def __init__(self, x, y, data, model_output, label,
                  batch=100, axes = [0.0, np.inf, 0.0, np.inf]):
         self.x = x
         self.y = y
         self.data = data
-        self.data_mean = data_mean
-        self.data_sd = data_sd
         self.model_output = model_output
         self.label = label
         self.batch = batch
@@ -69,38 +67,57 @@ class meas_avg_euclid_dist_loss(measure):
     def eval(self, sess):
         loss_total = 0
         X, Y = self.data
-        means = self.data_mean
-        sds = self.data_sd
-        modified_X = self.add_noise(X, means, sds)
+        modified_X = self.add_noise(X)
         end = X.shape[0]
         cur = 0
         while cur < end:
             inds = range(cur, min(cur + self.batch, end))
-            model_predict = sess.run(self.model_output, feed_dict={self.x: X[inds],
-                                                           self.y: Y[inds]})
-            modified_predict = sess.run(self.model_output, feed_dict={self.x: modified_X[inds],
-                                                              self.y: Y[inds]})
-            loss_total += self.euclid_dist(model_predict, modified_predict)
+            model_predict = sess.run(self.model_output, feed_dict={self.x: X[inds]})
+            modified_predict = sess.run(self.model_output, feed_dict={self.x: modified_X[inds]})
+            loss_total += euclid_dist(model_predict, modified_predict)
             cur += self.batch
         return loss_total
 
-    def add_noise(self, X, X_mean, X_sd, pixels=1):
+    def add_noise(self, X, pixels=1):
         n, max_idx = X.shape # Total number of observations and pixels in a flattened image
-        # random_noise = np.abs(np.transpose(np.random.normal(X_mean, X_sd, [pixels, n])))
         random_indices = np.random.choice(max_idx, [n, pixels])
         noisy_X = np.add(np.zeros(X.shape, dtype=X.dtype), X)
         for i in range(0, n):
-            noisy_X[i][random_indices[i]] = 0#random_noise[i]
+            noisy_X[i][random_indices[i]] = 0
         return noisy_X
 
-    def euclid_dist(self, x, y): # x and y must have the same shape
-        xy_diff = np.subtract(x,y)
-        sqrd_diff = np.multiply(xy_diff, xy_diff)
-        col_sum = np.sum(sqrd_diff, 1)
-        distance = np.sum(np.sqrt(col_sum))
-        return distance
 
+class meas_random_noise_euclid_dist(measure):
 
+    def __init__(self, x, y, data, variance, model_output, label,
+                 batch=100, axes = [0.0, np.inf, 0.0, np.inf]):
+        self.x = x
+        self.y = y
+        self.var = variance
+        self.data = data
+        self.model_output = model_output
+        self.label = label
+        self.batch = batch
+        self.axes = axes
+
+    def eval(self, sess):
+        loss_total = 0
+        X, Y = self.data
+        modified_X = self.add_noise(X)
+        end = X.shape[0]
+        cur = 0
+        while cur < end:
+            inds = range(cur, min(cur + self.batch, end))
+            model_predict = sess.run(self.model_output, feed_dict={self.x: X[inds]})
+            modified_predict = sess.run(self.model_output, feed_dict={self.x: modified_X[inds]})
+            loss_total += euclid_dist(model_predict, modified_predict)
+            cur += self.batch
+        return loss_total
+
+    def add_noise(self, X):
+        random_noise = np.random.normal(0, self.var, X.shape)
+        noisy_X = np.abs(np.add(random_noise, X))
+        return noisy_X
 
 
 class meas_time(measure):
@@ -143,7 +160,6 @@ class meas_iter(measure):
 
 
 # general
-
 def reset(meas_list):
   for meas in meas_list:
     meas.reset()
@@ -163,3 +179,12 @@ def printout(label, meas_list, sess, echo):
   if echo:
     print("\t")
   return results
+
+
+""" Utility """
+def euclid_dist(x, y):  # x and y must have the same shape
+  xy_diff = np.subtract(x, y)
+  sqrd_diff = np.multiply(xy_diff, xy_diff)
+  col_sum = np.sum(sqrd_diff, 1)
+  distance = np.sum(np.sqrt(col_sum))
+  return distance
